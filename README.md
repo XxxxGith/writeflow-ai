@@ -2,6 +2,10 @@
 
 AI-powered writing assistant SaaS. Generate blog posts, product descriptions, emails, social media content. Rewrite and translate text instantly.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/XxxxGith/writeflow-ai)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/XxxxGith/writeflow-ai)
+
 ## Quick Start
 
 ```bash
@@ -21,20 +25,17 @@ Open `http://localhost:8000` in your browser. Enter your access token in the hea
 | `MAX_TOKENS` | Max response tokens | `2048` |
 | `PORT` | Server port | `8000` |
 
+## Deploy to Render (Free)
+
+1. Click the **Deploy to Render** button above
+2. Set `OPENAI_API_KEY` and `MASTER_API_KEY` environment variables
+3. Done! Your app will be live at `https://writeflow-ai.onrender.com`
+
 ## Deploy to Railway
 
-1. Push to GitHub
-2. Connect repo on [railway.app](https://railway.app)
-3. Set env vars in Railway dashboard
-4. Deploy - auto-detects `Procfile`
-
-## Deploy to Render
-
-1. Push to GitHub
-2. New Web Service on [render.com](https://render.com)
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Set env vars
+1. Click the **Deploy on Railway** button above
+2. Set `OPENAI_API_KEY` and `MASTER_API_KEY` environment variables
+3. Deploy - auto-detects `Procfile`
 
 ## API Endpoints
 
