@@ -2,12 +2,20 @@ services:
   - type: web
     name: writeflow-ai
     runtime: python
+    repo: https://github.com/XxxxGith/writeflow-ai
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: MASTER_API_KEY
-        sync: false
+        generateValue: true
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: MAX_TOKENS
+        value: "2048"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
     healthCheckPath: /api/health
     plan: free
+    autoDeploy: true
