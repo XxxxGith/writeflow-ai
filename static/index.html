@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WriteFlow AI - AI-Powered Writing Assistant</title>
+    <meta name="description" content="WriteFlow AI: Generate blog posts, product descriptions, emails, and social media content with AI. Rewrite and translate instantly.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* ================================================================
+           CSS RESET & VARIABLES
+           ================================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a2e;
+            --bg-card: #16162a;
+            --bg-hover: #1e1e3a;
+            --bg-input: #0e0e1a;
+
+            --text-primary: #e8e8f0;
+            --text-secondary: #9898b0;
+            --text-muted: #6868808c;
+
+            --accent: #6c5ce7;
+            --accent-hover: #7e70f0;
+            --accent-glow: rgba(108, 92, 231, 0.25);
+            --accent-secondary: #00cec9;
+
+            --border: #2a2a40;
+            --border-light: #3a3a55;
+
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --error: #e17055;
+
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --shadow-lg: 0 8px 48px rgba(0,0,0,0.4);
+
+            --sidebar-width: 260px;
+            --header-height: 64px;
+
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        html { font-size: 16px; }
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ================================================================
+           SCROLLBAR
+           ================================================================ */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+        /* ================================================================
+           LAYOUT
+           ================================================================ */
+        .app {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            grid-template-rows: var(--header-height) 1fr;
+            grid-template-areas:
+                "header header"
+                "sidebar main";
+            min-height: 100vh;
+        }
+
+        /* ================================================================
+           HEADER
+           ================================================================ */
+        .header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        .header__brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header__logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            color: #fff;
+        }
+        .header__title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header__badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .header__right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .token-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+        }
+        .token-input label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .token-input input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 13px;
+            width: 180px;
+            outline: none;
+        }
+        .token-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--error);
+            transition: background 0.3s;
+        }
+        .token-status.active { background: var(--success); }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* ================================================================
+           SIDEBAR
+           ================================================================ */
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 20px 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sidebar__section {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 12px 6px;
+        }
+        .sidebar__item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        .sidebar__item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .sidebar__item.active {
+            background: var(--accent-glow);
+            color: var(--accent-hover);
+            border-color: rgba(108, 92, 231, 0.3);
+        }
+        .sidebar__icon {
+            font-size: 20px;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .sidebar__footer {
+            margin-top: auto;
+            padding: 16px 12px;
+            border-top: 1px solid var(--border);
+        }
+        .sidebar__credits {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ================================================================
+           MAIN CONTENT
+           ================================================================ */
+        .main {
+            grid-area: main;
+            padding: 28px 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .tool-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .tool-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ================================================================
+           FORM CONTROLS
+           ================================================================ */
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .control-group select,
+        .control-group input[type="text"] {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: var(--font);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .control-group select:focus,
+        .control-group input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        /* ================================================================
+           EDITOR AREA
+           ================================================================ */
+        .editor {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+        }
+        .editor__input-wrapper {
+            position: relative;
+        }
+        .editor__textarea {
+            width: 100%;
+            min-height: 180px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 14px;
+            line-height: 1.7;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .editor__textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .editor__textarea::placeholder {
+            color: var(--text-muted);
+        }
+        .char-count {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .editor__actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .btn--primary {
+            background: linear-gradient(135deg, var(--accent), #8b7cf7);
+            color: #fff;
+            border: none;
+        }
+        .btn--primary:hover {
+            background: linear-gradient(135deg, var(--accent-hover), #9b8ff7);
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+        .btn--primary:active { transform: translateY(0); }
+        .btn--primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn--secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn--secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+        .btn--ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+        }
+        .btn--ghost:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ================================================================
+           OUTPUT
+           ================================================================ */
+        .output {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: none;
+        }
+        .output.visible { display: block; }
+        .output__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-tertiary);
+        }
+        .output__header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .output__header-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .output__body {
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        /* Markdown content styling */
+        .output__body h1 { font-size: 22px; font-weight: 700; margin: 16px 0 8px; }
+        .output__body h2 { font-size: 18px; font-weight: 700; margin: 14px 0 6px; color: var(--accent-hover); }
+        .output__body h3 { font-size: 16px; font-weight: 600; margin: 12px 0 4px; }
+        .output__body p { margin: 8px 0; }
+        .output__body ul, .output__body ol { margin: 8px 0; padding-left: 24px; }
+        .output__body li { margin: 4px 0; }
+        .output__body strong { color: #fff; }
+        .output__body em { color: var(--accent-secondary); }
+        .output__body code {
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .output__body pre {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .output__body blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+            color: var(--text-secondary);
+            margin: 12px 0;
+        }
+        .output__body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0;
+        }
+        .output__meta {
+            display: flex;
+            gap: 16px;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ================================================================
+           TOAST
+           ================================================================ */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast--success { border-left: 3px solid var(--success); }
+        .toast--error { border-left: 3px solid var(--error); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* ================================================================
+           EMPTY STATE
+           ================================================================ */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .empty-state__icon { font-size: 48px; opacity: 0.4; }
+        .empty-state__text { font-size: 15px; }
+
+        /* ================================================================
+           RESPONSIVE
+           ================================================================ */
+        @media (max-width: 768px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main";
+            }
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: var(--header-height);
+                bottom: 0;
+                width: 280px;
+                z-index: 200;
+                transition: left 0.3s ease;
+                box-shadow: var(--shadow-lg);
+            }
+            .sidebar.open { left: 0; }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                top: var(--header-height);
+                background: rgba(0,0,0,0.5);
+                z-index: 199;
+            }
+            .sidebar-overlay.open { display: block; }
+            .menu-toggle { display: block; }
+            .main { padding: 20px 16px; }
+            .token-input input { width: 120px; }
+            .header__badge { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .token-input { display: none; }
+            .controls { flex-direction: column; }
+            .editor__actions { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header__brand">
+                <button class="menu-toggle" id="menuToggle">&#9776;</button>
+                <div class="header__logo">W</div>
+                <div>
+                    <div class="header__title">WriteFlow AI</div>
+                </div>
+                <span class="header__badge">PRO</span>
+            </div>
+            <div class="header__right">
+                <div class="token-input">
+                    <label>API Key</label>
+                    <input type="password" id="tokenInput" placeholder="Enter access token..." />
+                    <div class="token-status" id="tokenStatus"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar__section">Content Generation</div>
+            <div class="sidebar__item active" data-tool="blog">
+                <span class="sidebar__icon">&#9997;</span>
+                <span>Blog Writer</span>
+            </div>
+            <div class="sidebar__item" data-tool="product">
+                <span class="sidebar__icon">&#128722;</span>
+                <span>Product Description</span>
+            </div>
+            <div class="sidebar__item" data-tool="email">
+                <span class="sidebar__icon">&#9993;</span>
+                <span>Email Writer</span>
+            </div>
+            <div class="sidebar__item" data-tool="social">
+                <span class="sidebar__icon">&#128172;</span>
+                <span>Social Media</span>
+            </div>
+
+            <div class="sidebar__section">Tools</div>
+            <div class="sidebar__item" data-tool="rewrite">
+                <span class="sidebar__icon">&#128260;</span>
+                <span>Rewriter</span>
+            </div>
+            <div class="sidebar__item" data-tool="translate">
+                <span class="sidebar__icon">&#127760;</span>
+                <span>Translator</span>
+            </div>
+
+            <div class="sidebar__footer">
+                <div class="sidebar__credits">WriteFlow AI v1.0</div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="main" id="mainContent">
+            <!-- Populated by JS -->
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    /* ==================================================================
+       WriteFlow AI - Frontend Application
+       ================================================================== */
+    (() => {
+        "use strict";
+
+        // ----- State -----
+        const state = {
+            currentTool: "blog",
+            token: localStorage.getItem("wf_token") || "",
+            loading: false,
+            lastResult: null,
+        };
+
+        // ----- Tool Config -----
+        const TOOLS = {
+            blog: {
+                title: "Blog Writer",
+                description: "Generate SEO-optimized blog posts with compelling structure",
+                endpoint: "/api/generate",
+                type: "blog",
+                placeholder: "Describe the blog post you want...\n\nExample: Write a 1000-word blog post about the benefits of remote work in 2025, targeting tech professionals. Include practical tips and statistics.",
+                controls: ["tone", "language"],
+            },
+            product: {
+                title: "Product Description",
+                description: "Create conversion-focused product descriptions",
+                endpoint: "/api/generate",
+                type: "product",
+                placeholder: "Describe the product...\n\nExample: A wireless noise-cancelling headphone with 40-hour battery life, premium leather cushions, and Bluetooth 5.3. Price point: $149. Target audience: remote workers and music lovers.",
+                controls: ["tone", "language"],
+            },
+            email: {
+                title: "Email Writer",
+                description: "Craft professional emails that get responses",
+                endpoint: "/api/generate",
+                type: "email",
+                placeholder: "Describe the email you need...\n\nExample: Write a follow-up email to a potential client who attended our product demo last week. We're offering a 20% early adopter discount. Keep it warm but professional.",
+                controls: ["tone", "language"],
+            },
+            social: {
+                title: "Social Media",
+                description: "Create engaging posts for all platforms",
+                endpoint: "/api/generate",
+                type: "social",
+                placeholder: "Describe the social media content...\n\nExample: Announce the launch of our new AI writing tool. Highlight key features: multi-language support, one-click rewriting, and SEO optimization. Create versions for Twitter, LinkedIn, and Instagram.",
+                controls: ["tone", "language"],
+            },
+            rewrite: {
+                title: "Rewriter",
+                description: "Improve, rephrase, or change the tone of any text",
+                endpoint: "/api/rewrite",
+                type: "rewrite",
+                placeholder: "Paste the text you want to rewrite...",
+                controls: ["style"],
+            },
+            translate: {
+                title: "Translator",
+                description: "Translate between Chinese and English (auto-detect) or any language pair",
+                endpoint: "/api/translate",
+                type: "translate",
+                placeholder: "Paste the text you want to translate...\n\nChinese text will be translated to English, and vice versa.",
+                controls: ["source_lang", "target_lang"],
+            },
+        };
+
+        const TONES = ["professional", "casual", "friendly", "formal", "witty", "persuasive", "academic"];
+        const STYLES = ["improved", "formal", "casual", "concise", "expanded"];
+        const LANGUAGES = [
+            {value: "en", label: "English"},
+            {value: "zh", label: "Chinese"},
+            {value: "es", label: "Spanish"},
+            {value: "fr", label: "French"},
+            {value: "de", label: "German"},
+            {value: "ja", label: "Japanese"},
+            {value: "ko", label: "Korean"},
+        ];
+
+        // ----- DOM Refs -----
+        const $main = document.getElementById("mainContent");
+        const $tokenInput = document.getElementById("tokenInput");
+        const $tokenStatus = document.getElementById("tokenStatus");
+        const $toastContainer = document.getElementById("toastContainer");
+        const $menuToggle = document.getElementById("menuToggle");
+        const $sidebar = document.getElementById("sidebar");
+        const $sidebarOverlay = document.getElementById("sidebarOverlay");
+
+        // ----- Init -----
+        function init() {
+            // Token
+            $tokenInput.value = state.token;
+            updateTokenStatus();
+            $tokenInput.addEventListener("input", (e) => {
+                state.token = e.target.value.trim();
+                localStorage.setItem("wf_token", state.token);
+                updateTokenStatus();
+            });
+
+            // Sidebar navigation
+            document.querySelectorAll(".sidebar__item").forEach(item => {
+                item.addEventListener("click", () => {
+                    state.currentTool = item.dataset.tool;
+                    document.querySelectorAll(".sidebar__item").forEach(i => i.classList.remove("active"));
+                    item.classList.add("active");
+                    render();
+                    closeSidebar();
+                });
+            });
+
+            // Mobile menu
+            $menuToggle.addEventListener("click", toggleSidebar);
+            $sidebarOverlay.addEventListener("click", closeSidebar);
+
+            // Keyboard shortcut
+            document.addEventListener("keydown", (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    const btn = document.getElementById("generateBtn");
+                    if (btn && !btn.disabled) btn.click();
+                }
+            });
+
+            render();
+        }
+
+        function updateTokenStatus() {
+            $tokenStatus.classList.toggle("active", state.token.length > 5);
+        }
+
+        function toggleSidebar() { $sidebar.classList.toggle("open"); $sidebarOverlay.classList.toggle("open"); }
+        function closeSidebar() { $sidebar.classList.remove("open"); $sidebarOverlay.classList.remove("open"); }
+
+        // ----- Render -----
+        function render() {
+            const tool = TOOLS[state.currentTool];
+            const isGenerate = ["blog","product","email","social"].includes(state.currentTool);
+
+            let controlsHTML = "";
+
+            if (tool.controls.includes("tone")) {
+                controlsHTML += `
+                    <div class="control-group">
+                        <label>Tone</label>
+                        <select id="toneSelect">
+                            ${TONES.map(t => `<option value="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join("")}
+                        </select>
+                    </div>`;
+            }
+            if (tool.controls.includes("language")) {
+                controlsHTML += `
+                    <div class="control-group">
+                        <label>Language</label>
+                        <select id="langSelect">
+                            ${LANGUAGES.map(l => `<option value="${l.value}">${l.label}</option>`).join("")}
+                        </select>
+                    </div>`;
+            }
+            if (tool.controls.includes("style")) {
+                controlsHTML += `
+                    <div class="control-group">
+                        <label>Rewrite Style</label>
+                        <select id="styleSelect">
+                            ${STYLES.map(s => `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join("")}
+                        </select>
+                    </div>`;
+            }
+            if (tool.controls.includes("source_lang")) {
+                controlsHTML += `
+                    <div class="control-group">
+                        <label>Source</label>
+                        <select id="srcLangSelect">
+                            <option value="auto">Auto Detect</option>
+                            ${LANGUAGES.map(l => `<option value="${l.value}">${l.label}</option>`).join("")}
+                        </select>
+                    </div>`;
+            }
+            if (tool.controls.includes("target_lang")) {
+                controlsHTML += `
+                    <div class="control-group">
+                        <label>Target</label>
+                        <select id="tgtLangSelect">
+                            ${LANGUAGES.map(l => `<option value="${l.value}">${l.label}</option>`).join("")}
+                        </select>
+                    </div>`;
+            }
+
+            const btnLabel = isGenerate ? "Generate" : (state.currentTool === "rewrite" ? "Rewrite" : "Translate");
+
+            $main.innerHTML = `
+                <div class="tool-header">
+                    <div>
+                        <h1>${tool.title}</h1>
+                        <p>${tool.description}</p>
+                    </div>
+                </div>
+
+                ${controlsHTML ? `<div class="controls">${controlsHTML}</div>` : ""}
+
+                <div class="editor">
+                    <div class="editor__input-wrapper">
+                        <textarea class="editor__textarea" id="inputArea" placeholder="${tool.placeholder}"></textarea>
+                        <span class="char-count" id="charCount">0 / 4000</span>
+                    </div>
+                    <div class="editor__actions">
+                        <button class="btn btn--primary" id="generateBtn">
+                            <span id="btnContent">${btnLabel}</span>
+                        </button>
+                        <button class="btn btn--secondary" id="clearBtn">Clear</button>
+                        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Ctrl+Enter to submit</span>
+                    </div>
+                </div>
+
+                <div class="output" id="outputPanel">
+                    <div class="output__header">
+                        <div class="output__header-left">
+                            <span>&#10003;</span>
+                            <span>Generated Content</span>
+                        </div>
+                        <div class="output__header-actions">
+                            <button class="btn btn--ghost" id="copyBtn" title="Copy to clipboard">&#128203; Copy</button>
+                            <button class="btn btn--ghost" id="copyRawBtn" title="Copy raw markdown">Raw</button>
+                        </div>
+                    </div>
+                    <div class="output__body" id="outputBody"></div>
+                    <div class="output__meta" id="outputMeta"></div>
+                </div>
+
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state__icon">&#9997;</div>
+                    <div class="empty-state__text">Enter your prompt and click ${btnLabel} to get started</div>
+                </div>
+            `;
+
+            // Bind events
+            const $input = document.getElementById("inputArea");
+            const $charCount = document.getElementById("charCount");
+            const $generateBtn = document.getElementById("generateBtn");
+            const $clearBtn = document.getElementById("clearBtn");
+
+            $input.addEventListener("input", () => {
+                const len = $input.value.length;
+                const max = state.currentTool === "rewrite" || state.currentTool === "translate" ? 8000 : 4000;
+                $charCount.textContent = `${len} / ${max}`;
+            });
+
+            $generateBtn.addEventListener("click", handleGenerate);
+            $clearBtn.addEventListener("click", () => {
+                $input.value = "";
+                $charCount.textContent = "0 / 4000";
+                document.getElementById("outputPanel").classList.remove("visible");
+                document.getElementById("emptyState").style.display = "";
+            });
+        }
+
+        // ----- API Call -----
+        async function handleGenerate() {
+            const tool = TOOLS[state.currentTool];
+            const $input = document.getElementById("inputArea");
+            const $btn = document.getElementById("generateBtn");
+            const $btnContent = document.getElementById("btnContent");
+            const text = $input.value.trim();
+
+            if (!text) {
+                toast("Please enter some text first.", "error");
+                return;
+            }
+            if (!state.token) {
+                toast("Please enter your access token in the header.", "error");
+                return;
+            }
+
+            // Build request body
+            let body = {};
+            if (tool.endpoint === "/api/generate") {
+                body = {
+                    type: tool.type,
+                    prompt: text,
+                    tone: document.getElementById("toneSelect")?.value || "professional",
+                    language: document.getElementById("langSelect")?.value || "en",
+                };
+            } else if (tool.endpoint === "/api/rewrite") {
+                body = {
+                    text: text,
+                    style: document.getElementById("styleSelect")?.value || "improved",
+                };
+            } else if (tool.endpoint === "/api/translate") {
+                body = {
+                    text: text,
+                    source_lang: document.getElementById("srcLangSelect")?.value || "auto",
+                    target_lang: document.getElementById("tgtLangSelect")?.value || "en",
+                };
+            }
+
+            // UI loading state
+            state.loading = true;
+            $btn.disabled = true;
+            $btnContent.innerHTML = '<span class="spinner"></span> Generating...';
+
+            try {
+                const resp = await fetch(tool.endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${state.token}`,
+                    },
+                    body: JSON.stringify(body),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({detail: "Unknown error"}));
+                    throw new Error(err.detail || `HTTP ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                state.lastResult = data;
+                showOutput(data);
+                toast("Content generated successfully!", "success");
+
+            } catch (err) {
+                toast(err.message, "error");
+            } finally {
+                state.loading = false;
+                $btn.disabled = false;
+                const isGenerate = ["blog","product","email","social"].includes(state.currentTool);
+                const label = isGenerate ? "Generate" : (state.currentTool === "rewrite" ? "Rewrite" : "Translate");
+                $btnContent.textContent = label;
+            }
+        }
+
+        function showOutput(data) {
+            const $panel = document.getElementById("outputPanel");
+            const $body = document.getElementById("outputBody");
+            const $meta = document.getElementById("outputMeta");
+            const $empty = document.getElementById("emptyState");
+
+            // Render markdown
+            $body.innerHTML = marked.parse(data.content || "");
+            $meta.innerHTML = `
+                <span>Model: ${data.model}</span>
+                <span>Tokens: ${data.usage?.total_tokens || "?"}</span>
+                <span>Prompt: ${data.usage?.prompt_tokens || "?"}</span>
+                <span>Completion: ${data.usage?.completion_tokens || "?"}</span>
+            `;
+
+            $panel.classList.add("visible");
+            $empty.style.display = "none";
+
+            // Copy buttons
+            document.getElementById("copyBtn").onclick = () => {
+                const text = $body.innerText;
+                navigator.clipboard.writeText(text).then(() => toast("Copied to clipboard!", "success"));
+            };
+            document.getElementById("copyRawBtn").onclick = () => {
+                navigator.clipboard.writeText(data.content).then(() => toast("Raw markdown copied!", "success"));
+            };
+        }
+
+        // ----- Toast -----
+        function toast(msg, type = "success") {
+            const el = document.createElement("div");
+            el.className = `toast toast--${type}`;
+            el.innerHTML = `<span>${type === "success" ? "&#10003;" : "&#10007;"}</span> ${msg}`;
+            $toastContainer.appendChild(el);
+            setTimeout(() => {
+                el.style.animation = "slideOut 0.3s ease forwards";
+                setTimeout(() => el.remove(), 300);
+            }, 3500);
+        }
+
+        // ----- Boot -----
+        init();
+    })();
+    </script>
+</body>
+</html>
